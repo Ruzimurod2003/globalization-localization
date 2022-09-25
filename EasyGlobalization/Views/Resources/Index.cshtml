@@ -1,0 +1,67 @@
+﻿@model IEnumerable<EasyGlobalization.Models.Resource>
+@{
+    string GetCultureName(int id)
+    {
+        return db.Cultures.FirstOrDefault(i => i.Id == id).Name;
+    }
+}
+<p>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        @Localizer["Create new"]
+    </button>
+    @{
+
+        var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+        var nowCultureName = requestCulture.RequestCulture.Culture.Name;
+        var cultureNames = LocOptions.Value.SupportedUICultures
+        .Select(c => c.Name)
+        .ToList();
+    }
+    <partial name="_CreatePartial" model="new ResourceCreateVM{CultureNames=cultureNames}"></partial>
+
+    <a asp-action="Index" asp-controller="Cultures" class="btn btn-primary">@Localizer["Culturies"]</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Localizer["Key"]
+            </th>
+            <th>
+                @Localizer["Value"]
+            </th>
+            <th>
+                @Localizer["Culture"]
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @item.Key
+                </td>
+                <td>
+                    @item.Value
+                </td>
+                <td>
+                    @GetCultureName(item.CulutureId)
+                </td>
+                <td>
+                    <form asp-action="Edit" asp-controller="Resources" method="post">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal_@item.Id">
+                            @Localizer["Edit"]
+                        </button>
+                        <partial name="_EditPartial" model="new ResourceEditVM {Id = item.Id ,CultureNames = cultureNames,CultureName = item.Culture.Name,Key = item.Key,Value = item.Value}"></partial>
+                    </form>
+                    <form asp-action="Delete" asp-controller="Resources" asp-route-id="@item.Id">
+                        <input class="btn btn-danger" type="submit" value="@Localizer["Delete"]" />
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,13 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers.Localization
+@using EasyGlobalization.ViewModels;
+@using EasyGlobalization.Models;
+@using Microsoft.Extensions.Localization;
+@inject IStringLocalizer Localizer;
+@using EasyGlobalization.Data;
+@inject LocalizationContext db;
+@using Microsoft.AspNetCore.Localization;
+@using Microsoft.Extensions.Options;
+@inject IOptions<RequestLocalizationOptions> LocOptions;
+@using Microsoft.AspNetCore.Builder;
+@using Microsoft.AspNetCore.Mvc.Localization;

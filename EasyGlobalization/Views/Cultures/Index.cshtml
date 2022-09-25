@@ -1,0 +1,38 @@
+﻿@model IEnumerable<EasyGlobalization.Models.Culture>
+
+<h1>@Localizer["Cultures"]</h1>
+
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+    @Localizer["Create new"]
+</button>
+<partial name="_CreatePartial" model="new CultureCreateVM()"></partial>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Localizer["Name"]
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @item.Name
+                </td>
+                <td>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal_@item.Id">
+                        @Localizer["Edit"]
+                    </button>
+                    <partial name="_EditPartial" model="new CultureEditVM { Id = item.Id ,Name = item.Name}"></partial>
+                    <form asp-action="Delete" asp-controller="Cultures" asp-route-id="@item.Id">
+                        <input class="btn btn-danger" type="submit" value="@Localizer["Delete"]" />
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
