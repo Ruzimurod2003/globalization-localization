@@ -1,0 +1,70 @@
+﻿------------------------------------------------------------------------------------
+SharedResource.ru.resx
+SharedResource.en.resx
+SharedResource.de.resx
+------------------------------------------------------------------------------------
+
+
+
+HomeController  =>
+------------------------------------------------------------------------------------
+private readonly IStringLocalizer<HomeController> _localizer;
+private readonly IStringLocalizer<SharedResource> _sharedLocalizer;
+public HomeController(IStringLocalizer<HomeController> localizer,
+            IStringLocalizer<SharedResource> sharedLocalizer)
+{
+    _localizer = localizer;
+    _sharedLocalizer = sharedLocalizer;
+}
+public string Test()
+{
+    // получаем ресурс Message
+    string message = _sharedLocalizer["Message"];
+    return message;
+}
+// остальное содержимое контроллера
+------------------------------------------------------------------------------------
+
+В представлении мы можем передать ресурсы через сервис типа IHtmlLocalizer<SharedResource>
+------------------------------------------------------------------------------------
+@using Microsoft.AspNetCore.Mvc.Localization 
+@inject IViewLocalizer Localizer 
+@inject IHtmlLocalizer<SharedResource> SharedLocalizer 
+<h3>@SharedLocalizer["Message"]</h3>
+------------------------------------------------------------------------------------
+
+Конфигуратсия в ConfigureServices
+----------------------------------------------------------------------------------------
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews()
+                .AddDataAnnotationsLocalization(options => {
+                    options.DataAnnotationLocalizerProvider = (type, factory) =>
+                        factory.Create(typeof(SharedResource));
+                }) // добавляем локализацию аннотаций;
+                .AddViewLocalization();// добавляем локализацию представлений;
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в Configure
+----------------------------------------------------------------------------------------
+app.UseDeveloperExceptionPage(); 
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("ru"),
+    new CultureInfo("de")
+};
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+}); 
+app.UseStaticFiles(); 
+app.UseRouting(); 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+});
+----------------------------------------------------------------------------------------

@@ -1,0 +1,45 @@
+﻿Создат новий файлом
+----------------------------------------------------------------------------------------
+Resources/Controllers.HomeController.ru.resx
+Resources/Controllers/HomeController.uz.resx
+
+****************************************************************************************
+<data name="HEADER" xml:space="preserve">
+    <value>salom</value>
+</data>
+<data name="MESSAGE" xml:space="preserve">
+    <value>hayrli kun</value>
+</data>
+****************************************************************************************
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в ConfigureServices
+----------------------------------------------------------------------------------------
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews();
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в Configure
+----------------------------------------------------------------------------------------
+app.UseDeveloperExceptionPage(); 
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("ru"),
+    new CultureInfo("de")
+};
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+}); 
+app.UseStaticFiles(); 
+app.UseRouting(); 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+});
+----------------------------------------------------------------------------------------

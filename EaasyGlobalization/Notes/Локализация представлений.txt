@@ -1,0 +1,58 @@
+﻿-------------------------------------------------------------------------------------
+[папка_ресурсов]/Views/Home/Index.[код_культуры].resx
+
+[папка_ресурсов]/Views.Home.Index.[код_культуры].resx
+-------------------------------------------------------------------------------------
+
+Например, добавим для представления Views/Home/Index.cshtml ресурсы в папку Resources
+
+В данном случае я определил три файла ресурсов:
+
+Resources/Views/Home/Index.ru.resx (для русского языка)
+
+Resources/Views/Home/Index.en.resx (для английского языка)
+
+Resources/Views/Home/Index.de.resx (для немецкого языка)
+
+
+Используем эти ресурсы в представлении Views/Home/Index.cshtml
+-------------------------------------------------------------------------------------
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
+ 
+ 
+<h1>@Localizer["Header"]</h1>
+<h3>@Localizer["Message"]</h3>
+-------------------------------------------------------------------------------------
+
+Конфигуратсия в ConfigureServices
+----------------------------------------------------------------------------------------
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews()
+                   .AddViewLocalization();// добавляем локализацию представлений;
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в Configure
+----------------------------------------------------------------------------------------
+app.UseDeveloperExceptionPage(); 
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("ru"),
+    new CultureInfo("de")
+};
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+}); 
+app.UseStaticFiles(); 
+app.UseRouting(); 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+});
+----------------------------------------------------------------------------------------

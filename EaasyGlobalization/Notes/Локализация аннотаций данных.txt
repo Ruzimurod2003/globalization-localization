@@ -1,0 +1,109 @@
+﻿Создат новий класс ProductViewModel
+------------------------------------------------------------------------------------------------
+using System.ComponentModel.DataAnnotations;
+ 
+namespace LocalizationApp.ViewModels
+{
+    public class ProductViewModel
+    {
+        [Required(ErrorMessage = "NameRequired")]
+        [StringLength(20, ErrorMessage = "NameLength", MinimumLength = 6)]
+        [Display(Name = "Name")]
+        public string Name { get; set; }
+        [Required(ErrorMessage = "PriceRequired")]
+        [Range(10, 100, ErrorMessage = "PriceRange")]
+        [Display(Name = "Price")]
+        public int Price { get; set; }
+    }
+}
+------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------
+[папка_ресурсов]/ViewModels.ProductViewModel.[код_культры].resx
+Например:
+1] Resources/ViewModels/ProductViewModel.ru.resx
+2] Resources/ViewModels/ProductViewModel.en.resx
+3] Resources/ViewModels/ProductViewModel.de.resx
+------------------------------------------------------------------------------------------------
+
+Конфигуратсия в ConfigureServices
+----------------------------------------------------------------------------------------
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews()
+                .AddDataAnnotationsLocalization() // добавляем локализацию аннотаций;
+                .AddViewLocalization();// добавляем локализацию представлений;
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в Configure
+----------------------------------------------------------------------------------------
+app.UseDeveloperExceptionPage(); 
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("ru"),
+    new CultureInfo("de")
+};
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+}); 
+app.UseStaticFiles(); 
+app.UseRouting(); 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+});
+----------------------------------------------------------------------------------------
+
+Cоздадим представление Create.cshtml
+----------------------------------------------------------------------------------------
+@model LocalizationApp.ViewModels.ProductViewModel
+ 
+<form asp-antiforgery="true" asp-action="Create" asp-controller="Home">
+    <div>
+        <div class="validation" asp-validation-summary="All"></div>
+        <div>
+ 
+            <label asp-for="Name"></label><br />
+            <input type="text" asp-for="Name" />
+            <span asp-validation-for="Name"></span>
+        </div>
+ 
+        <div>
+            <label asp-for="Price"></label><br />
+            <input asp-for="Price" />
+            <span asp-validation-for="Price"></span>
+        </div>
+        <div>
+            <input type="submit" value="Save" />
+        </div>
+    </div>
+</form>
+ 
+@section scripts{
+ 
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+}
+----------------------------------------------------------------------------------------
+
+В контроллере HomeController действие Create
+----------------------------------------------------------------------------------------
+public IActionResult Create()
+{
+    return View();
+}
+[HttpPost]
+public IActionResult Create(ProductViewModel model)
+{
+    if(ModelState.IsValid)
+    {
+        return Content("модель добавлена");
+    }
+    return View(model);
+}
+----------------------------------------------------------------------------------------

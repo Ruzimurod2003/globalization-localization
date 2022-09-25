@@ -1,0 +1,38 @@
+﻿------------------------------------------------------------------------------------------------
+app.UseCulture();
+
+http://localhost:5000/?lang=en
+------------------------------------------------------------------------------------------------
+var supportedCultures = new[]
+{
+    new CultureInfo("en-US"),
+    new CultureInfo("en-GB"),
+    new CultureInfo("en"),
+    new CultureInfo("ru-RU"),
+    new CultureInfo("ru"),
+    new CultureInfo("de-DE"),
+    new CultureInfo("de")
+};
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru-RU"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
+------------------------------------------------------------------------------------------------
+
+QueryStringRequestCultureProvider
+------------------------------------------------------------------------------------------------
+http://localhost:5000/?culture=en-US&ui-culture=en-US
+------------------------------------------------------------------------------------------------
+
+CookieRequestCultureProvider
+------------------------------------------------------------------------------------------------
+c=%LANGCODE%|uic=%LANGCODE%
+------------------------------------------------------------------------------------------------
+
+AcceptLanguageHeaderRequestCultureProvider
+------------------------------------------------------------------------------------------------
+Accept-Language=ru-RU
+------------------------------------------------------------------------------------------------

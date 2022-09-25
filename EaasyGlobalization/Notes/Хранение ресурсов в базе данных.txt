@@ -1,0 +1,227 @@
+﻿Класс Resource:
+-----------------------------------------------------------------------------------
+public class Resource
+{
+    public int Id { get; set; }
+    public string Key { get; set; }     // ключ
+    public string Value { get; set; }   // значение
+    public Culture Culture { get; set; }
+}
+-----------------------------------------------------------------------------------
+
+Класс Culture:
+-----------------------------------------------------------------------------------
+using System.Collections.Generic;
+ 
+namespace EFLocalizationApp.Models
+{
+    public class Culture
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public List<Resource> Resources { get; set; }
+        public Culture()
+        {
+            Resources = new List<Resource>();
+        }
+    }
+}
+-----------------------------------------------------------------------------------
+
+Kласс контекста данных LocalizationContext
+-----------------------------------------------------------------------------------
+using Microsoft.EntityFrameworkCore;
+ 
+namespace EFLocalizationApp.Models
+{
+    public class LocalizationContext : DbContext
+    {
+        public LocalizationContext(DbContextOptions<LocalizationContext> options) 
+            : base(options)
+        { 
+            Database.EnsureCreated();
+        }
+        public DbSet<Culture> Cultures { get; set; }
+        public DbSet<Resource> Resources { get; set; }
+    }
+}
+-----------------------------------------------------------------------------------
+
+Cоздать инфраструктуру новый класс EFStringLocalizer
+-----------------------------------------------------------------------------------
+using EFLocalizationApp.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+ 
+namespace EFLocalizationApp
+{
+    public class EFStringLocalizer : IStringLocalizer
+    {
+        private readonly LocalizationContext _db;
+ 
+        public EFStringLocalizer(LocalizationContext db)
+        {
+            _db = db;
+        }
+ 
+        public LocalizedString this[string name]
+        {
+            get
+            {
+                var value = GetString(name);
+                return new LocalizedString(name, value ?? name, resourceNotFound: value == null);
+            }
+        }
+ 
+        public LocalizedString this[string name, params object[] arguments]
+        {
+            get
+            {
+                var format = GetString(name);
+                var value = string.Format(format ?? name, arguments);
+                return new LocalizedString(name, value, resourceNotFound: format == null);
+            }
+        }
+ 
+        public IStringLocalizer WithCulture(CultureInfo culture)
+        {
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            return new EFStringLocalizer(_db);
+        }
+ 
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeAncestorCultures)
+        {
+            return _db.Resources
+                .Include(r => r.Culture)
+                .Where(r => r.Culture.Name == CultureInfo.CurrentCulture.Name)
+                .Select(r => new LocalizedString(r.Key, r.Value));
+        }
+ 
+        private string GetString(string name)
+        {
+            return _db.Resources
+                .Include(r => r.Culture)
+                .Where(r => r.Culture.Name == CultureInfo.CurrentCulture.Name)
+                .FirstOrDefault(r => r.Key == name)?.Value;
+        }
+    }
+}
+-----------------------------------------------------------------------------------
+
+Фабрику объектов IStringLocalizer => EFStringLocalizerFactory
+-----------------------------------------------------------------------------------
+using EFLocalizationApp.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+ 
+namespace EFLocalizationApp
+{
+    public class EFStringLocalizerFactory : IStringLocalizerFactory
+    {
+        string _connectionString;
+        public EFStringLocalizerFactory(string connection)
+        {
+            _connectionString = connection;
+        }
+ 
+        public IStringLocalizer Create(Type resourceSource)
+        {
+            return CreateStringLocalizer();
+        }
+ 
+        public IStringLocalizer Create(string baseName, string location)
+        {
+            return CreateStringLocalizer();
+        }
+ 
+        private IStringLocalizer CreateStringLocalizer()
+        {
+            LocalizationContext _db = new LocalizationContext(
+                new DbContextOptionsBuilder<LocalizationContext>()
+                    .UseSqlServer(_connectionString)
+                    .Options);
+            // инициализация базы данных
+            if (!_db.Cultures.Any())
+            {
+                _db.AddRange(
+                    new Culture
+                    {
+                        Name = "en",
+                        Resources = new List<Resource>()
+                        {
+                            new Resource { Key = "Header", Value = "Hello" },
+                            new Resource { Key = "Message", Value = "Welcome" }
+                        }
+                    },
+                    new Culture
+                    {
+                        Name = "ru",
+                        Resources = new List<Resource>()
+                        {
+                            new Resource { Key = "Header", Value = "Привет" },
+                            new Resource { Key = "Message", Value = "Добро пожаловать" }
+                        }
+                    },
+                    new Culture
+                    {
+                        Name = "de",
+                        Resources = new List<Resource>()
+                        {
+                            new Resource { Key = "Header", Value = "Hallo" },
+                            new Resource { Key = "Message", Value = "Willkommen" }
+                        }
+                    }
+                );
+                _db.SaveChanges();
+            }
+            return new EFStringLocalizer(_db);
+        }
+    }
+}
+-----------------------------------------------------------------------------------
+
+Конфигуратсия в ConfigureServices
+----------------------------------------------------------------------------------------
+string connection = "Server=(localdb)\\mssqllocaldb;Database=localizationdb;Trusted_Connection=True;";
+builder.Services.AddDbContext<LocalizationContext>(options => options.UseSqlServer(connection)); 
+builder.Services.AddTransient<IStringLocalizer, EFStringLocalizer>();
+builder.Services.AddSingleton<IStringLocalizerFactory>(new EFStringLocalizerFactory(connection));
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews()
+                    .AddDataAnnotationsLocalization(options => {
+                                    options.DataAnnotationLocalizerProvider = (type, factory) =>
+                                    factory.Create(null);
+                                })
+                   .AddViewLocalization();// добавляем локализацию представлений;
+----------------------------------------------------------------------------------------
+
+Конфигуратсия в Configure
+----------------------------------------------------------------------------------------
+app.UseDeveloperExceptionPage(); 
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("ru"),
+    new CultureInfo("de")
+};
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ru"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+}); 
+app.UseStaticFiles(); 
+app.UseRouting(); 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+});
+----------------------------------------------------------------------------------------
